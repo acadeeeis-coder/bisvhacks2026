@@ -91,12 +91,14 @@
     </div>
   </main>
 
+  <script src="web.js"></script>
   <script>
     let map, userMarker, resultMarkers = [];
     let userLat = null, userLon = null;
     let isTyping = false;
     let conversationHistory = [];
 
+    // Map setup functions
     function initMap() {
       map = L.map('map', { zoomControl: false }).setView([39.5, -98.35], 4);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -104,7 +106,22 @@
         maxZoom: 19,
       }).addTo(map);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
+      
+      // Setup integration with web.js
+      setupWebJsIntegration();
       locateUser(true);
+    }
+
+    function setupWebJsIntegration() {
+      // Initialize web.js with map and callbacks
+      if (window.AidLensSearch) {
+        window.AidLensSearch.setupIntegration(
+          map,
+          addAIMessage,
+          addResultsToMap,
+          updateMapLegend
+        );
+      }
     }
 
     function locateUser(silent = false) {
@@ -134,19 +151,6 @@
       );
     }
 
-    async function searchNominatim(query, lat, lon) {
-      let url;
-      if (lat && lon) {
-        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=8&viewbox=${lon-0.3},${lat+0.3},${lon+0.3},${lat-0.3}&bounded=1&addressdetails=1`;
-      } else {
-        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=8&addressdetails=1`;
-      }
-      try {
-        const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'AidLens/1.0' } });
-        return await res.json();
-      } catch (e) { return []; }
-    }
-
     function distKm(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -160,26 +164,43 @@
       resultMarkers = [];
     }
 
-    function addResultsToMap(places, emoji, category) {
+    function addResultsToMap(places, categoryORprompt) {
       clearResultMarkers();
       const colors = ['#2a2a2a','#111111','#444444','#666666','#1c1c1c','#888888'];
       const bounds = [];
       if (userLat && userLon) bounds.push([userLat, userLon]);
 
+      // Handle both OSM places (from web.js) and Nominatim places (from Claude)
+      const isOSMFormat = places[0]?.name !== undefined;
+      
       places.forEach((place, i) => {
-        const lat = parseFloat(place.lat), lon = parseFloat(place.lon);
+        let lat, lon, name, addr;
+        
+        if (isOSMFormat) {
+          // web.js format (name, latitude, longitude, distance)
+          lat = place.latitude;
+          lon = place.longitude;
+          name = place.name;
+          addr = `${place.distance.toFixed(1)} miles away`;
+        } else {
+          // Nominatim format (display_name, lat, lon)
+          lat = parseFloat(place.lat);
+          lon = parseFloat(place.lon);
+          name = place.display_name.split(',')[0];
+          addr = place.display_name.split(',').slice(0,3).join(', ');
+        }
+        
         const color = colors[i % colors.length];
-        const name = place.display_name.split(',')[0];
+        const emoji = isOSMFormat ? '📍' : '🏢';
         const pinHtml = `<div style="background:${color};width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.25);border:2px solid rgba(255,255,255,0.85);"><span style="transform:rotate(45deg);font-size:15px;">${emoji}</span></div>`;
         const icon = L.divIcon({ className:'', html:pinHtml, iconSize:[36,36], iconAnchor:[18,36], popupAnchor:[0,-38] });
-        const dist = (userLat && userLon) ? distKm(userLat,userLon,lat,lon).toFixed(1)+' km away' : '';
-        const addr = place.display_name.split(',').slice(0,3).join(', ');
+        const dist = (userLat && userLon && isOSMFormat === false) ? distKm(userLat,userLon,lat,lon).toFixed(1)+' km away' : addr;
+        
         const marker = L.marker([lat,lon],{icon}).addTo(map).bindPopup(`
           <div style="font-family:'DM Sans',sans-serif;padding:4px 2px;min-width:180px;">
             <div style="font-weight:600;color:#141414;margin-bottom:4px;font-size:0.9rem;">${emoji} ${name}</div>
-            <div style="font-size:0.78rem;color:#888888;margin-bottom:4px;">${category}</div>
             <div style="font-size:0.78rem;color:#1c1c1c;">${addr}</div>
-            ${dist ? `<div style="font-size:0.75rem;color:#d0d0d0;margin-top:4px;font-weight:500;">📍 ${dist}</div>` : ''}
+            ${dist && dist !== addr ? `<div style="font-size:0.75rem;color:#d0d0d0;margin-top:4px;font-weight:500;">📍 ${dist}</div>` : ''}
           </div>`);
         resultMarkers.push(marker);
         bounds.push([lat,lon]);
@@ -188,9 +209,12 @@
       if (bounds.length > 1) map.fitBounds(bounds, { padding:[60,60] });
       else if (bounds.length === 1) map.setView(bounds[0], 13);
 
+      updateMapLegend(places.length, categoryORprompt);
+    }
+
+    function updateMapLegend(count, label) {
       document.getElementById('map-legend').classList.add('visible');
-      document.getElementById('legend-content').innerHTML = `<span class="legend-count">${places.length}</span> ${category} locations found`;
-      document.getElementById('welcome-card').classList.add('hidden');
+      document.getElementById('legend-content').innerHTML = `<span class="legend-count">${count}</span> ${label} locations found`;
     }
 
     async function callClaude(userMessage) {
@@ -237,6 +261,17 @@ Tone: warm, respectful, non-judgmental. Be brief (2-4 sentences max before the J
       return { displayText, searchData };
     }
 
+    async function searchWithWebJs(prompt) {
+      // Use web.js for location search
+      try {
+        const places = await window.AidLensSearch.searchAndDisplay(prompt, userLat, userLon);
+        return places;
+      } catch (err) {
+        console.error('Error in web.js search:', err);
+        return [];
+      }
+    }
+
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const text = input.value.trim();
@@ -250,23 +285,34 @@ Tone: warm, respectful, non-judgmental. Be brief (2-4 sentences max before the J
         const { displayText, searchData } = await callClaude(text);
         hideTyping();
         if (searchData) {
+          // Use web.js for multi-radius search
           let places = [];
-          for (const q of (searchData.searchTerms || [])) {
-            places = [...places, ...await searchNominatim(q, userLat, userLon)];
+          for (const searchTerm of (searchData.searchTerms || [])) {
+            const results = await searchWithWebJs(searchTerm);
+            places = [...places, ...results];
           }
+          
+          // Remove duplicates by name
           const seen = new Set();
-          places = places.filter(p => { if (seen.has(p.display_name)) return false; seen.add(p.display_name); return true; }).slice(0,8);
+          places = places.filter(p => { 
+            const key = (p.name || p.display_name);
+            if (seen.has(key)) return false; 
+            seen.add(key); 
+            return true; 
+          }).slice(0,10);
+          
           if (places.length > 0) {
             addAIMessage(displayText, places, searchData.category, searchData.emoji);
-            addResultsToMap(places, searchData.emoji, searchData.category);
+            addResultsToMap(places, searchData.category);
           } else {
-            addAIMessage(displayText + '\n\n⚠️ I searched the map but couldn\'t find exact listings nearby. Try enabling your location or searching a larger city nearby. You can also call 211 (US) — a free helpline that connects you with local services.');
+            addAIMessage(displayText + '\n\n⚠️ I searched nearby but couldn\'t find exact listings. Try enabling your location or searching a larger city nearby. You can also call 211 (US) — a free helpline that connects you with local services.');
           }
         } else {
           addAIMessage(displayText);
         }
       } catch (err) {
         hideTyping();
+        console.error('Error during search:', err);
         addAIMessage('I\'m having trouble connecting right now. Please try again in a moment. If you need immediate help, call 211 — it\'s free and connects you with local services.');
       }
       isTyping = false;
@@ -289,11 +335,14 @@ Tone: warm, respectful, non-judgmental. Be brief (2-4 sentences max before the J
       let cardsHtml = '';
       if (places?.length > 0) {
         cardsHtml = '<div class="result-cards">';
-        places.slice(0,5).forEach(p => {
-          const name = p.display_name.split(',')[0];
-          const addr = p.display_name.split(',').slice(1,3).join(', ').trim();
-          const dist = (userLat && userLon) ? distKm(userLat,userLon,parseFloat(p.lat),parseFloat(p.lon)).toFixed(1)+' km away' : '';
-          cardsHtml += `<div class="result-card" onclick="focusPlace(${p.lat},${p.lon},'${escAttr(name)}')">
+        const displayPlaces = places.slice(0, 5);
+        displayPlaces.forEach(p => {
+          const name = p.name || p.display_name.split(',')[0];
+          const addr = p.name ? `${p.distance.toFixed(1)} miles away` : p.display_name.split(',').slice(1,3).join(', ').trim();
+          const lat = p.latitude || parseFloat(p.lat);
+          const lon = p.longitude || parseFloat(p.lon);
+          const dist = (userLat && userLon && !p.name) ? distKm(userLat, userLon, lat, lon).toFixed(1)+' km away' : '';
+          cardsHtml += `<div class="result-card" onclick="focusPlace(${lat},${lon},'${escAttr(name)}')">
             <div class="rc-name">${emoji||'📍'} ${escHtml(name)}</div>
             <div class="rc-type">${escHtml(addr)}</div>
             ${dist?`<div class="rc-dist">📍 ${dist}</div>`:''}
@@ -302,7 +351,7 @@ Tone: warm, respectful, non-judgmental. Be brief (2-4 sentences max before the J
         cardsHtml += '</div>';
         if (places.length > 5) cardsHtml += `<div style="font-size:0.75rem;color:var(--mist);margin-top:8px;text-align:center;">+${places.length-5} more shown on map</div>`;
       }
-      div.innerHTML = `<div class="msg-avatar">🤝</div><div class="msg-bubble"><strong>AidLens Guide</strong>${escHtml(text).replace(/\n/g,'<br/>')}${cardsHtml}</div>`;
+      div.innerHTML = `<div class="msg-avatar">🤝</div><div class="msg-bubble"><strong>AidLens Guide</strong><br/>${escHtml(text).replace(/\n/g,'<br/>')}${cardsHtml}</div>`;
       msgs.appendChild(div); scrollMessages();
     }
 

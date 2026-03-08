@@ -501,48 +501,53 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Example usage - test with real OpenStreetMap data with expanding radius
-(async () => {
-  console.log("\n" + "=".repeat(70));
-  console.log("AIDLENS LOCATION SEARCH ENGINE");
-  console.log("=".repeat(70));
-  console.log("Starting search with progressive radius expansion...");
-  console.log("Radius progression: 5 -> 10 -> 15 -> 20 -> 30 -> 45 -> 60 -> 90 miles");
-  console.log("=".repeat(70) + "\n");
-  
-  const results = await searchNearbyByPrompt("restaurant");
-  
-  if (results && results.length > 0) {
-    console.log("\n" + "=".repeat(70));
-    console.log("SEARCH COMPLETE: Found " + results.length + " results");
-    console.log("=".repeat(70) + "\n");
+// Integration functions for DOM and chat
+let mapInstance = null;
+let addMessageCallback = null;
+let addToMapCallback = null;
+let updateLegendCallback = null;
+
+// Set up callbacks for integrating with the chat app
+function setupAidLensIntegration(mapObj, msgCallback, mapCallback, legendCallback) {
+  mapInstance = mapObj;
+  addMessageCallback = msgCallback;
+  addToMapCallback = mapCallback;
+  updateLegendCallback = legendCallback;
+}
+
+// Search and display results for the chat interface
+async function searchAndDisplayResults(prompt, userLat, userLon) {
+  try {
+    console.log(`\n🔍 Starting search for: "${prompt}"`);
     
-    results.forEach((place, i) => {
-      console.log((i + 1) + ". " + place.name);
-      console.log("   Coordinates: " + place.latitude.toFixed(4) + "N, " + place.longitude.toFixed(4) + "W");
-      console.log("   Distance: " + place.distance.toFixed(2) + " miles");
-      console.log("   Source: " + place.source);
-      console.log();
-    });
+    const places = await searchNearbyByPrompt(prompt);
     
-    console.log("=".repeat(70));
-  } else {
-    console.log("\n" + "=".repeat(70));
-    console.log("NO RESULTS found within 90 mile radius");
-    console.log("=".repeat(70));
+    if (places && places.length > 0) {
+      console.log(`✅ Found ${places.length} places to display`);
+      
+      if (addToMapCallback) {
+        addToMapCallback(places, prompt);
+      }
+      
+      if (updateLegendCallback) {
+        updateLegendCallback(places.length, prompt);
+      }
+      
+      return places;
+    } else {
+      console.log(`❌ No results found for: ${prompt}`);
+      return [];
+    }
+  } catch (err) {
+    console.error(`Error in searchAndDisplayResults: ${err.message}`);
+    return [];
   }
-})();
+}
 
-
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => {
-  navbar.classList.toggle('scrolled', window.scrollY > 40);
-});
-
-const reveals = document.querySelectorAll('.reveal');
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
-  });
-}, { threshold: 0.12 });
-reveals.forEach(el => observer.observe(el));
+// Export functions for use in HTML
+window.AidLensSearch = {
+  setupIntegration: setupAidLensIntegration,
+  searchAndDisplay: searchAndDisplayResults,
+  findLocation: Find,
+  searchNearby: searchNearbyByPrompt
+};
