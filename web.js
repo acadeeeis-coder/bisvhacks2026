@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from "https://esm.sh/@google/genai";
 const GEMINI_API_KEY = process.env.AIzaSyB43w40syh9YVmA5d7XLhU9UdJerqgk31w
 const ai = new GoogleGenAI({apiKey:GEMINI_API_KEY});
 
