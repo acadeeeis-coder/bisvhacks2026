@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AidLens — Find Help Near You</title>
+
+  <!-- Leaflet (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- AidLens App Stylesheet -->
+  <link rel="stylesheet" href="appstyle.css" />
+</head>
+<body>
+
+  <!-- ── TOPBAR ─────────────────────────────────────────────── -->
+  <header id="topbar">
+    <a href="index.html" class="logo" style="text-decoration:none;">
+      <div class="logo-icon"><img src="aidlens.png" height="30" alt="logo"></img></div>
+      <div>
+        <div class="logo-text">Aid<span>Lens</span></div>
+      </div>
+    </a>
+  </header>
+
+  <!-- Loading bar -->
+  <div id="loading-bar"></div>
+
+  <!-- ── MAIN ───────────────────────────────────────────────── -->
+  <main id="main">
+
+    <!-- MAP -->
+    <div id="map-panel">
+      <div id="map"></div>
+
+      <!-- Legend -->
+      <div id="map-legend">
+        <div class="legend-title">📍 Nearby Results</div>
+        <div id="legend-content"></div>
+      </div>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div id="chat-panel">
+      <div id="chat-header">
+        <div class="ai-label">
+          <div class="ai-avatar"><img src="bot pfp.png" height="40"></img></div>
+          <div>
+            <div class="ai-name">AidLens Guide</div>
+            <div class="ai-desc">AI assistant · finds real help near you</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="messages">
+        <div class="msg ai">
+          <div class="msg-avatar"><img src="bot pfp.png" height="35"></img></div>
+          <div class="msg-bubble">
+            <strong>AidLens Guide</strong>
+            Hello, I'm here to help you find free services and support near you. Tell me what you're going through — anything at all — and I'll find places nearby that can help.<br/><br/>
+            You can say things like <em>"I need a lawyer about my landlord"</em>, <em>"I need food for my family"</em>, or <em>"I'm struggling with my mental health"</em>.
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div id="chat-input-area">
+        <div class="quick-prompts">
+          <button class="quick-btn" onclick="window.AidLensChat.setCategoryPrompt('I need help with my landlord evicting me')">🏠 Eviction help</button>
+          <button class="quick-btn" onclick="window.AidLensChat.setCategoryPrompt('I need food assistance for my family')">🍽 Food bank</button>
+          <button class="quick-btn" onclick="window.AidLensChat.setCategoryPrompt('I need free medical care, I have no insurance')">🏥 Free clinic</button>
+          <button class="quick-btn" onclick="window.AidLensChat.setCategoryPrompt('I need emergency shelter tonight')">🛏 Shelter</button>
+          <button class="quick-btn" onclick="window.AidLensChat.setCategoryPrompt('I need help finding a job')">💼 Job help</button>
+        </div>
+        <div id="input-row">
+          <textarea id="user-input" placeholder="Describe your situation…" rows="1"></textarea>
+          <button id="send-btn" onclick="window.AidLensChat.sendMessage()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="web.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const ta = document.getElementById('user-input');
+      ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,110)+'px'; });
+      ta.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); window.AidLensChat.sendMessage(); } });
+      window.AidLensChat.initMap();
+    });
+  </script>
+</body>
+</html>
