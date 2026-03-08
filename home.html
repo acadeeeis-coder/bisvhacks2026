@@ -1,1 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AidLens — Help Is Closer Than You Think</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
 
+  <!-- ── NAV ──────────────────────────────────────────────── -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark">🔍</div>
+      <span class="nav-logo-text">Aid<em>Lens</em></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#categories">Resources</a></li>
+      <li><a href="#stories">Stories</a></li>
+      <li><a href="app.html" class="nav-cta">Find Help Now →</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── HERO ─────────────────────────────────────────────── -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-circle hero-circle-1"></div>
+    <div class="hero-circle hero-circle-2"></div>
+    <div class="hero-circle hero-circle-3"></div>
+
+    <div class="hero-left">
+      <div class="hero-eyebrow">Free · Private · Always Available</div>
+      <h1>
+        Help is <span class="highlight">closer</span><br/>
+        than you think.
+      </h1>
+      <p class="hero-desc">
+        Describe your situation in your own words. Our AI listens, understands, and finds free services — lawyers, clinics, shelters, food banks, and more — right on a map near you.
+      </p>
+      <div class="hero-actions">
+        <a href="app.html" class="btn-primary">Find Help Near Me →</a>
+        <a href="#how" class="btn-secondary">See how it works <span class="arrow">→</span></a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">Free to use</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">50+</div>
+          <div class="stat-label">Types of help</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">Any</div>
+          <div class="stat-label">Situation, no judgment</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="map-mockup">
+        <div class="map-mockup-bar">
+          <div class="mock-dot mock-dot-r"></div>
+          <div class="mock-dot mock-dot-y"></div>
+          <div class="mock-dot mock-dot-g"></div>
+          <div class="mock-url">aidlens.org/find-help</div>
+        </div>
+        <div class="map-mockup-body">
+          <div class="mock-road mock-road-h mock-road-h1"></div>
+          <div class="mock-road mock-road-h mock-road-h2"></div>
+          <div class="mock-road mock-road-h mock-road-h3"></div>
+          <div class="mock-road mock-road-v mock-road-v1"></div>
+          <div class="mock-road mock-road-v mock-road-v2"></div>
+          <div class="mock-road mock-road-v mock-road-v3"></div>
+          <div class="mock-block b1"></div>
+          <div class="mock-block b2"></div>
+          <div class="mock-block b3"></div>
+          <div class="mock-block b4"></div>
+          <div class="mock-block b5"></div>
+          <div class="mock-block b6"></div>
+          <div class="mock-block b7"></div>
+          <div class="mock-block b8"></div>
+          <div class="mock-user-pin"><div class="mock-user-dot"></div></div>
+          <div class="mock-pin mock-pin-1">
+            <div class="mock-pin-head pin-green"><span>⚖️</span></div>
+            <div class="mock-pin-label">Legal Aid</div>
+          </div>
+          <div class="mock-pin mock-pin-2">
+            <div class="mock-pin-head pin-dark"><span>🏥</span></div>
+            <div class="mock-pin-label">Free Clinic</div>
+          </div>
+          <div class="mock-pin mock-pin-3">
+            <div class="mock-pin-head pin-mid"><span>🍽️</span></div>
+            <div class="mock-pin-label">Food Bank</div>
+          </div>
+          <div class="mock-pin mock-pin-4">
+            <div class="mock-pin-head pin-fern"><span>🏠</span></div>
+            <div class="mock-pin-label">Shelter</div>
+          </div>
+          <div class="mock-chat">
+            <div class="mock-chat-header">
+              <div class="mock-chat-dot"></div>
+              AidLens Guide · AI
+            </div>
+            <div class="mock-chat-body">
+              <div class="mock-msg mock-msg-user">my landlord won't fix heat</div>
+              <div class="mock-msg mock-msg-ai"><span>Found 4 legal aid offices</span> near you →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MARQUEE STRIP ─────────────────────────────────────── -->
+  <div id="strip">
+    <div class="marquee-track">
+      <span>Legal Aid</span><span>Food Assistance</span><span>Emergency Shelter</span>
+      <span>Free Health Clinics</span><span>Mental Health Support</span><span>Job Training</span>
+      <span>Immigration Help</span><span>Domestic Violence Services</span><span>Financial Assistance</span>
+      <span>Childcare Services</span><span>Addiction Recovery</span><span>Disability Support</span>
+      <!-- duplicate for seamless loop -->
+      <span>Legal Aid</span><span>Food Assistance</span><span>Emergency Shelter</span>
+      <span>Free Health Clinics</span><span>Mental Health Support</span><span>Job Training</span>
+      <span>Immigration Help</span><span>Domestic Violence Services</span><span>Financial Assistance</span>
+      <span>Childcare Services</span><span>Addiction Recovery</span><span>Disability Support</span>
+    </div>
+  </div>
+
+  <!-- ── HOW IT WORKS ──────────────────────────────────────── -->
+  <section id="how">
+    <div class="section-inner">
+      <div class="how-header reveal">
+        <div class="section-label">The Process</div>
+        <h2>Three steps to <em>real help</em></h2>
+      </div>
+      <div class="steps reveal">
+        <div class="step step-connector">
+          <div class="step-num">01</div>
+          <span class="step-icon">💬</span>
+          <h3>Tell us your situation</h3>
+          <p>No forms. No appointments. Just talk to the AI in plain language — describe what you're facing right now.</p>
+        </div>
+        <div class="step step-connector">
+          <div class="step-num">02</div>
+          <span class="step-icon">🧠</span>
+          <h3>AI finds what you need</h3>
+          <p>AidLens understands your situation and identifies the exact type of services that can help — legal, medical, food, shelter, and more.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <span class="step-icon">📍</span>
+          <h3>See locations near you</h3>
+          <p>Results appear instantly on an interactive map. Tap any pin to see details, hours, and how far away they are.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CATEGORIES ────────────────────────────────────────── -->
+  <section id="categories">
+    <div class="section-inner">
+      <div class="cat-header reveal">
+        <div>
+          <div class="section-label">What We Can Find</div>
+          <h2>Help for every <em>situation</em></h2>
+        </div>
+        <a href="app.html" class="btn-secondary">Browse all resources <span class="arrow">→</span></a>
+      </div>
+      <div class="cat-grid">
+        <a href="app.html" class="cat-card cat-card-large reveal">
+          <span class="cat-emoji">⚖️</span>
+          <div>
+            <div class="cat-name">Legal Aid & Tenant Rights</div>
+            <div class="cat-desc">Being evicted? Dispute with your landlord? Need a pro-bono lawyer? AidLens finds free legal clinics and attorneys who specialize in your exact issue.</div>
+          </div>
+          <div class="cat-arrow">→</div>
+        </a>
+        <a href="app.html" class="cat-card reveal reveal-delay-1">
+          <span class="cat-emoji">🏥</span>
+          <div class="cat-name">Free Health Clinics</div>
+          <div class="cat-desc">No insurance? We locate community health centers and free clinics near you.</div>
+          <div class="cat-arrow">→</div>
+        </a>
+        <a href="app.html" class="cat-card reveal reveal-delay-1">
+          <span class="cat-emoji">🍽️</span>
+          <div class="cat-name">Food Banks & Meals</div>
+          <div class="cat-desc">Find food pantries, community kitchens, and meal programs open today near you.</div>
+          <div class="cat-arrow">→</div>
+        </a>
+        <a href="app.html" class="cat-card reveal reveal-delay-2">
+          <span class="cat-emoji">🏠</span>
+          <div class="cat-name">Emergency Shelter</div>
+          <div class="cat-desc">Locate shelters, transitional housing, and emergency accommodations right now.</div>
+          <div class="cat-arrow">→</div>
+        </a>
+        <a href="app.html" class="cat-card reveal reveal-delay-2">
+          <span class="cat-emoji">💼</span>
+          <div class="cat-name">Job Training & Employment</div>
+          <div class="cat-desc">Workforce centers, resume help, skills training — find opportunities nearby.</div>
+          <div class="cat-arrow">→</div>
+        </a>
+        <a href="app.html" class="cat-card reveal reveal-delay-3">
+          <span class="cat-emoji">🧠</span>
+          <div class="cat-name">Mental Health Support</div>
+          <div class="cat-desc">Free or low-cost counseling, crisis lines, and support groups in your area.</div>
+          <div class="cat-arrow">→</div>
+        </a>
+        <a href="app.html" class="cat-card reveal reveal-delay-3">
+          <span class="cat-emoji">🛂</span>
+          <div class="cat-name">Immigration Services</div>
+          <div class="cat-desc">Nonprofits and legal clinics that help with visas, asylum, and documentation.</div>
+          <div class="cat-arrow">→</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MISSION QUOTE ─────────────────────────────────────── -->
+  <section id="mission">
+    <div class="mission-bg"></div>
+    <div class="mission-inner reveal">
+      <span class="quote-mark">"</span>
+      <blockquote>
+        Knowing where to turn is the first step.<br/>
+        We make sure <span>no one walks that path alone.</span>
+      </blockquote>
+      <p>
+        AidLens was built on a simple belief: access to help shouldn't depend on who you know or what you can afford. Every person deserves to know what resources exist for them — clearly, quickly, and without judgment.
+      </p>
+      <a href="app.html" class="btn-primary">Start Your Search — It's Free</a>
+    </div>
+  </section>
+
+  <!-- ── STORIES ───────────────────────────────────────────── -->
+  <section id="stories">
+    <div class="section-inner">
+      <div class="stories-header reveal">
+        <div class="section-label">Real Stories</div>
+        <h2>People who found <em>their way</em></h2>
+      </div>
+      <div class="stories-grid">
+        <div class="story-card reveal">
+          <div class="story-tag">Legal</div>
+          <p class="story-quote">
+            "I typed <strong>'my landlord is trying to evict me illegally'</strong> and within seconds I had three tenant rights lawyers on the map. One was literally a mile away. I had no idea that help existed."
+          </p>
+          <div class="story-person">
+            <div class="story-avatar avatar-green">👩</div>
+            <div>
+              <div class="story-name">Maria T.</div>
+              <div class="story-detail">Single mother, Chicago</div>
+            </div>
+          </div>
+        </div>
+        <div class="story-card reveal reveal-delay-1">
+          <div class="story-tag">Health</div>
+          <p class="story-quote">
+            "I haven't had insurance in years. I told AidLens I needed a doctor and couldn't pay. It showed me a <strong>free community clinic two blocks from my apartment.</strong> I had no idea it was there."
+          </p>
+          <div class="story-person">
+            <div class="story-avatar avatar-deep">👨</div>
+            <div>
+              <div class="story-name">James R.</div>
+              <div class="story-detail">Construction worker, Houston</div>
+            </div>
+          </div>
+        </div>
+        <div class="story-card reveal reveal-delay-2">
+          <div class="story-tag">Food</div>
+          <p class="story-quote">
+            "I was too embarrassed to ask anyone for help feeding my kids. I used AidLens quietly on my phone. <strong>Found a food bank open on Saturday</strong>, two minutes from my house. It changed everything."
+          </p>
+          <div class="story-person">
+            <div class="story-avatar avatar-fern">👩</div>
+            <div>
+              <div class="story-name">Diane K.</div>
+              <div class="story-detail">Mother of three, Detroit</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ───────────────────────────────────────────────── -->
+  <section id="cta">
+    <div class="cta-bg"></div>
+    <div class="cta-lines"></div>
+    <div class="cta-inner reveal">
+      <div class="section-label">You deserve support</div>
+      <h2>Whatever you're facing,<br/><em>start here.</em></h2>
+      <p>No sign-up. No judgment. No cost. Just describe your situation and let AidLens help you find where to go.</p>
+      <div class="cta-actions">
+        <a href="app.html" class="btn-primary btn-primary-lg">Open AidLens →</a>
+      </div>
+      <p class="cta-note">Available 24/7 · Works on any device · <span>Always free</span></p>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────────────────────── -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo">
+          <div class="nav-logo-mark">🔍</div>
+          <span class="nav-logo-text">Aid<em>Lens</em></span>
+        </a>
+        <p>Helping people in need find free services, support, and community resources — wherever they are.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="app.html">Legal Aid</a></li>
+          <li><a href="app.html">Food & Nutrition</a></li>
+          <li><a href="app.html">Health Services</a></li>
+          <li><a href="app.html">Housing & Shelter</a></li>
+          <li><a href="app.html">Mental Health</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>About</h4>
+        <ul>
+          <li><a href="#">Our Mission</a></li>
+          <li><a href="#how">How It Works</a></li>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Accessibility</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Get Help Now</h4>
+        <ul>
+          <li><a href="app.html">Open AidLens App</a></li>
+          <li><a href="#">Call 211 (US)</a></li>
+          <li><a href="#">Crisis Resources</a></li>
+          <li><a href="#">Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 AidLens. Built with <span class="heart">♥</span> for communities in need.</p>
+      <p>Map data © <a href="https://www.openstreetmap.org/copyright" class="footer-osm-link">OpenStreetMap</a> contributors</p>
+    </div>
+  </footer>
+
+  <script>
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
