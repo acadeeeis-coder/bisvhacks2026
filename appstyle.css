@@ -297,6 +297,11 @@ body {
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
+  align-content: flex-start;
+}
+
+.msg {
+  flex-shrink: 0;
 }
 
 #messages::-webkit-scrollbar { width: 4px; }
@@ -337,11 +342,13 @@ body {
 }
 
 .msg-bubble {
-  max-width: 82%;
+  max-width: 100%;
   padding: 11px 14px;
   border-radius: 14px;
   font-size: 0.87rem;
   line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .msg.ai .msg-bubble {
