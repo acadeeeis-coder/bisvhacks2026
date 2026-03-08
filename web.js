@@ -13,21 +13,68 @@ async function Find() {
   }
 }
 
-async function APIcall(question) {
-  const response = await fetch('https://api.featherless.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer rc_f1cfe1eab5a7595f51c586e03883df18b0667d38314a198f860d3eaf6a6fd4ab'
-    },
-    body: JSON.stringify({
-      model: 'Qwen/Qwen2.5-7B-Instruct',
-      messages: [
-        { role: 'system', content: 'You will answer questions in an even format, with each part of the response separated by commas and in a consistent style. Triple check each answer, and ground the results by using online maps to check. Make numbers have up to 10 trailing decimals behind them. Return results as a list separated by semicolons.' },
-        { role: 'user', content: `${question}\nFormat each result as: name, latitude, longitude` }]})});
-  const data = await response.json();
-  GivenData = data.choices[0].message.content;
-  return GivenData;
+async function APIcall(question, retryCount = 0, maxRetries = 3) {
+  const models = [
+    'meta-llama/Llama-2-70b-chat-hf',  // Stronger model - primary
+    'Qwen/Qwen2.5-32B-Instruct',       // Strong alternative
+    'Qwen/Qwen2.5-7B-Instruct'         // Fallback
+  ];
+  
+  const currentModel = models[Math.min(retryCount, models.length - 1)];
+  
+  try {
+    console.log(`🤖 AI Call [Attempt ${retryCount + 1}/${maxRetries + 1}] using ${currentModel}`);
+    console.log(`📝 Question: ${question.substring(0, 80)}${question.length > 80 ? '...' : ''}`);
+    
+    const response = await fetch('https://api.featherless.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer rc_f1cfe1eab5a7595f51c586e03883df18b0667d38314a198f860d3eaf6a6fd4ab'
+      },
+      body: JSON.stringify({
+        model: currentModel,
+        temperature: 0.2,  // Lower temperature for more consistent output
+        max_tokens: 256,   // Limit response length
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a location search interpreter. You understand complex natural language descriptions and convert them to single search keywords. Be precise, concise, and practical. Return ONLY the search term, nothing else.' 
+          },
+          { role: 'user', content: question }
+        ]
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response structure');
+    }
+    
+    const content = data.choices[0].message.content;
+    console.log(`✅ API Response: "${content.substring(0, 100)}"`);
+    
+    GivenData = content;
+    return content;
+    
+  } catch (err) {
+    console.warn(`⚠️ API Error (${currentModel}): ${err.message}`);
+    
+    // Retry with next model if available
+    if (retryCount < maxRetries) {
+      console.log(`🔄 Retrying with different model...`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      return APIcall(question, retryCount + 1, maxRetries);
+    } else {
+      console.error(`❌ All API attempts exhausted`);
+      throw err;
+    }
+  }
 }
 
 // Main function: search for nearby places by prompt using OpenStreetMap
@@ -62,48 +109,179 @@ async function searchNearbyByPrompt(prompt) {
 // Use AI to understand what type of place the user is looking for
 async function determineSearchType(prompt) {
   try {
-    const question = `Convert this prompt into ONE OpenStreetMap search tag. Return ONLY a single word tag, nothing else. Prompt: ${prompt}. Examples: hospital, restaurant, police, library, bank, pharmacy, clinic, food_bank, shelter`;
-    const response = await APIcall(question);
-    // Extract only the first word/tag, remove any coordinates or extra data
-    const tag = response.trim().toLowerCase().split(/[,;\s]+/)[0];
-    return tag || prompt.toLowerCase();
-  } catch (err) {
-    console.warn("Could not determine search type from AI, using prompt as fallback");
-    return prompt.toLowerCase();
-  }
-}
+    console.log(`\n📍 SEARCH UNDERSTANDING: "${prompt}"`);
+    
+    // Create comprehensive prompt for AI to understand user intent
+    const comprehensiveQuestion = `You are a location search specialist. Convert this user request into a single, specific OpenStreetMap search term. 
 
-// Search OpenStreetMap Overpass API for real verified places
-async function searchOpenStreetMap(searchType, latitude, longitude) {
-  try {
-    const radius = 5000; // Search within 5km
+User Request: "${prompt}"
+
+Rules:
+- Return ONLY one search term
+- Common options: restaurant, hospital, clinic, pharmacy, police, library, bank, lawyer, food_bank, shelter, cafe, bar, pizza, burger, sushi, doctor, dentist, veterinary, atm, parking
+- For "help" or "assistance" → lawyer
+- For "food" or "eat" → restaurant
+- For "medical" → hospital
+- For "emergency" → police
+- For complex requests, extract the primary need
+
+Return ONLY the single search term, no explanation.`;
     
-    // Build Overpass API query
-    const overpassQuery = buildOverpassQuery(searchType, latitude, longitude, radius);
+    const response = await APIcall(comprehensiveQuestion);
     
-    console.log("Querying Overpass API...");
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: overpassQuery,
-      headers: { 'Content-Type': 'application/osm3s+xml' }
-    });
+    // Multiple extraction strategies for robustness
+    let tag = response
+      .trim()
+      .toLowerCase()
+      .replace(/["'.]/g, '')  // Remove quotes and apostrophes
+      .split(/[,;:\n|]/)[0]   // Split on common delimiters and take first
+      .trim()
+      .split(/\s+/)[0];        // Take first word only
     
-    if (!response.ok) {
-      throw new Error(`Overpass API error: ${response.status}`);
+    // Validate and fallback
+    if (!tag || tag.length < 2 || tag.length > 20) {
+      console.warn(`⚠️ Unusual tag extracted: "${tag}", using original prompt`);
+      tag = prompt.toLowerCase().split(/\s+/)[0];
     }
     
-    const xml = await response.text();
-    const places = parseOverpassXML(xml, latitude, longitude);
+    console.log(`🏷️ Extracted Search Tag: "${tag}"`);
+    return tag;
     
-    return places.length > 0 ? places : await fallbackNominatimSearch(searchType, latitude, longitude);
   } catch (err) {
-    console.warn("Overpass API failed, using Nominatim fallback:", err);
-    return await fallbackNominatimSearch(searchType, latitude, longitude);
+    console.warn(`❌ Search type determination failed: ${err.message}`);
+    console.log(`📌 Fallback: Using first word of prompt`);
+    const fallbackTag = prompt.toLowerCase().split(/\s+/)[0];
+    return fallbackTag || 'restaurant';
   }
 }
 
-// Build Overpass API query for the search type
-function buildOverpassQuery(searchType, lat, lon, radius) {
+// Search OpenStreetMap Overpass API with expanding radius loop
+async function searchOpenStreetMap(searchType, latitude, longitude) {
+  // Convert miles to approximate degrees (1 degree ≈ 69 miles)
+  const milesPerDegree = 69;
+  
+  // Search radius progression: start at 5 miles, expand to 90 miles
+  const searchRadii = [
+    { miles: 5, name: 'very close' },
+    { miles: 10, name: 'close' },
+    { miles: 15, name: 'nearby' },
+    { miles: 20, name: 'moderate distance' },
+    { miles: 30, name: 'medium distance' },
+    { miles: 45, name: 'far' },
+    { miles: 60, name: 'very far' },
+    { miles: 90, name: 'maximum distance' }
+  ];
+  
+  console.log(`\n${'═'.repeat(60)}`);
+  console.log(`🎯 SEARCH INITIATED FOR: ${searchType.toUpperCase()}`);
+  console.log(`📍 Location: ${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`);
+  console.log(`${'═'.repeat(60)}\n`);
+  
+  // Try progressively larger search radii
+  for (let i = 0; i < searchRadii.length; i++) {
+    const radiusInfo = searchRadii[i];
+    const delta = radiusInfo.miles / milesPerDegree;
+    const maxDistance = radiusInfo.miles;
+    
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`🔄 SEARCH ITERATION ${i + 1}/${searchRadii.length}`);
+    console.log(`📏 Radius: ${radiusInfo.miles} miles (${radiusInfo.name})`);
+    console.log(`${'─'.repeat(60)}`);
+    
+    // Retry logic for API glitches
+    let retryCount = 0;
+    const maxRetries = 2;
+    let places = [];
+    let success = false;
+    
+    while (retryCount <= maxRetries && !success) {
+      try {
+        // Build and execute Overpass query
+        const overpassQuery = buildOverpassQuery(searchType, latitude, longitude, delta);
+        
+        if (retryCount > 0) {
+          console.log(`\n🔁 Retry attempt ${retryCount}/${maxRetries}...`);
+        }
+        console.log(`🔍 Querying Overpass API...`);
+        console.log(`📝 Query delta: ${delta.toFixed(4)} degrees (±${radiusInfo.miles} miles)`);
+        
+        const response = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: overpassQuery,
+          headers: { 'Content-Type': 'application/osm3s+xml' }
+        });
+        
+        console.log(`📡 Response status: ${response.status}`);
+        
+        if (!response.ok) {
+          if (response.status >= 500) {
+            // Server error - retry with backoff
+            console.warn(`⚠️ Overpass returned ${response.status} (server error)`);
+            if (retryCount < maxRetries) {
+              const backoffTime = Math.pow(2, retryCount) * 1000;
+              console.log(`⏳ Waiting ${backoffTime}ms before retry...`);
+              await new Promise(resolve => setTimeout(resolve, backoffTime));
+              retryCount++;
+              continue;
+            }
+          }
+          console.warn(`⚠️ Overpass returned ${response.status}, skipping to next radius...`);
+          break;
+        }
+        
+        const responseText = await response.text();
+        console.log(`📦 Received ${responseText.length} characters`);
+        
+        if (!responseText || responseText.length < 10) {
+          throw new Error('Empty or invalid response from Overpass');
+        }
+        
+        // Parse response
+        places = parseOverpassXML(responseText, latitude, longitude, maxDistance);
+        success = true;
+        
+        console.log(`✅ Parsed ${places.length} places`);
+        
+        if (places.length > 0) {
+          console.log(`\n${'═'.repeat(60)}`);
+          console.log(`🎉 SUCCESS! Found ${places.length} results in ${radiusInfo.name} (${radiusInfo.miles} miles)`);
+          console.log(`${'═'.repeat(60)}\n`);
+          
+          places.forEach((place, idx) => {
+            console.log(`  ${idx + 1}. ${place.name}`);
+            console.log(`     📍 (${place.latitude.toFixed(4)}°, ${place.longitude.toFixed(4)}°)`);
+            console.log(`     📏 ${place.distance.toFixed(2)} miles away\n`);
+          });
+          
+          return places;
+        } else {
+          console.log(`❌ No results at ${radiusInfo.miles} miles, expanding search...`);
+        }
+      } catch (err) {
+        console.warn(`⚠️ Error at ${radiusInfo.miles} miles (attempt ${retryCount + 1}):`, err.message);
+        if (retryCount < maxRetries && (err.message.includes('glitch') || err.message.toLowerCase().includes('timeout'))) {
+          const backoffTime = Math.pow(2, retryCount) * 1000;
+          console.log(`⏳ Waiting ${backoffTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          retryCount++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+  
+  // If all Overpass attempts failed, try Nominatim fallback
+  console.log(`\n${'═'.repeat(60)}`);
+  console.log(`⚠️ Overpass exhausted all radii up to 90 miles`);
+  console.log(`🔄 Attempting Nominatim fallback search...`);
+  console.log(`${'═'.repeat(60)}\n`);
+  
+  return await fallbackNominatimSearch(searchType, latitude, longitude, 90);
+}
+
+// Build Overpass API query with variable delta
+function buildOverpassQuery(searchType, lat, lon, delta) {
   // Map common search terms to OpenStreetMap amenity/shop tags
   const tagMappings = {
     'hospital': 'amenity=hospital',
@@ -126,63 +304,123 @@ function buildOverpassQuery(searchType, lat, lon, radius) {
     tag = `amenity=${searchType}`;
   }
   
-  // Overpass API bbox format is: south,west,north,east (lat,lon,lat,lon)
-  const south = lat - 0.045;  // ~5km south
-  const west = lon - 0.045;
-  const north = lat + 0.045;  // ~5km north
-  const east = lon + 0.045;
+  const [key, value] = tag.split('=');
   
-  return `[bbox:${south},${west},${north},${east}];(node[${tag}];way[${tag}];relation[${tag}];);out center;`;
+  // Calculate bounding box with provided delta
+  const south = lat - delta;
+  const west = lon - delta;
+  const north = lat + delta;
+  const east = lon + delta;
+  
+  // Overpass API query with JSON output
+  return `[out:json][timeout:60];(node["${key}"="${value}"](${south},${west},${north},${east});way["${key}"="${value}"](${south},${west},${north},${east});relation["${key}"="${value}"](${south},${west},${north},${east}););out center;`;
 }
 
-// Parse Overpass XML response
-function parseOverpassXML(xml, userLat, userLon) {
+// Parse Overpass JSON/XML response
+function parseOverpassXML(responseText, userLat, userLon, maxDistance) {
   const places = [];
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xml, 'text/xml');
   
-  // Get all nodes and ways with names
-  const nodes = xmlDoc.querySelectorAll('node[visible="true"]');
-  const ways = xmlDoc.querySelectorAll('way[visible="true"]');
-  
-  nodes.forEach(node => {
-    const nameTag = node.querySelector('tag[k="name"]');
-    if (nameTag) {
-      const lat = parseFloat(node.getAttribute('lat'));
-      const lon = parseFloat(node.getAttribute('lon'));
-      places.push({
-        name: nameTag.getAttribute('v'),
-        latitude: lat,
-        longitude: lon,
-        source: 'OpenStreetMap',
-        distance: calculateDistance(userLat, userLon, lat, lon)
-      });
-    }
-  });
-  
-  ways.forEach(way => {
-    const nameTag = way.querySelector('tag[k="name"]');
-    const centerTag = way.querySelector('center');
-    if (nameTag && centerTag) {
-      const lat = parseFloat(centerTag.getAttribute('lat'));
-      const lon = parseFloat(centerTag.getAttribute('lon'));
-      places.push({
-        name: nameTag.getAttribute('v'),
-        latitude: lat,
-        longitude: lon,
-        source: 'OpenStreetMap',
-        distance: calculateDistance(userLat, userLon, lat, lon)
-      });
-    }
-  });
-  
-  return places.sort((a, b) => a.distance - b.distance).slice(0, 10);
-}
+  try {
+    // Check if we got JSON response
+    if (responseText.includes('"type"') || responseText.startsWith('{')) {
+      console.log('💾 Attempting to parse as JSON...');
+      const data = JSON.parse(responseText);
+      console.log(`📊 JSON parsed successfully with ${data.elements?.length || 0} elements`);
+      
+      if (data.elements && data.elements.length > 0) {
+        data.elements.forEach((element, idx) => {
+          if (element.tags && element.tags.name) {
+            const elemLat = element.lat || (element.center && element.center.lat);
+            const elemLon = element.lon || (element.center && element.center.lon);
+            
+            if (elemLat && elemLon) {
+              const distance = calculateDistance(userLat, userLon, elemLat, elemLon);
+              console.log(`  [${idx}] ${element.tags.name} @ (${elemLat.toFixed(4)}, ${elemLon.toFixed(4)}) = ${distance.toFixed(2)} miles`);
+              
+              if (distance <= maxDistance) {
+                places.push({
+                                    name: element.tags.name,
+                                    latitude: elemLat,
+                                    longitude: elemLon,
+                                    source: 'OpenStreetMap',
+                                    distance: distance
+                            });
+                                        }
+                                      }
+                                    }
+                                  });
+                                }
+                              } else {
+                                    throw new Error('Not JSON format');
 
-// Fallback: Use Nominatim API if Overpass fails
-async function fallbackNominatimSearch(searchType, latitude, longitude) {
+                                }
+                            } catch (jsonErr) {
+                                  console.log('⚠️ JSON parsing failed, trying XML fallback...');
+                                  try {
+                                    const parser = new DOMParser();
+                                    const xmlDoc = parser.parseFromString(responseText, 'text/xml');
+                                    const nodes = xmlDoc.querySelectorAll('node');
+                                    const ways = xmlDoc.querySelectorAll('way');
+
+                                    console.log(`📊 XML parsed with ${nodes.length} nodes and ${ways.length} ways`);
+
+                                  nodes.forEach(node => {
+                                      const nameTag = node.querySelector('tag[k=\"name\"]');
+                                      if (nameTag) {
+                                        const lat = parseFloat(node.getAttribute('lat'));
+                                        const lon = parseFloat(node.getAttribute('lon'));
+                                        const distance = calculateDistance(userLat, userLon, lat, lon);
+
+                                        if (distance <= maxDistance) {
+                                          places.push({
+                                            name: nameTag.getAttribute('v'),
+                                            latitude: lat,
+                                            longitude: lon,
+                                            source: 'OpenStreetMap',
+                                            distance: distance
+
+                                        });
+                                    }
+                                  }
+                                });
+
+                                  ways.forEach(way => {
+                                      const nameTag = way.querySelector('tag[k=\"name\"]');
+                                      const centerTag = way.querySelector('center');
+                                      if (nameTag && centerTag) {
+                                        const lat = parseFloat(centerTag.getAttribute('lat'));
+                                        const lon = parseFloat(centerTag.getAttribute('lon'));
+                                        const distance = calculateDistance(userLat, userLon, lat, lon);
+
+                                        if (distance <= maxDistance) {
+                                          places.push({
+                                            name: nameTag.getAttribute('v'),
+                                            latitude: lat,
+                                            longitude: lon,
+                                            source: 'OpenStreetMap',
+                                            distance: distance
+
+                                        });
+                                    }
+                                  }
+                                });
+                              } catch (xmlErr) {
+                                    console.error('❌ Both JSON and XML parsing failed:', xmlErr);
+
+                                }
+                            }
+
+                              return places.sort((a, b) => a.distance - b.distance).slice(0, 10);
+                          }
+
+
+// Fallback: Use Nominatim API if Overpass exhausts all radii
+async function fallbackNominatimSearch(searchType, latitude, longitude, maxDistance) {
     try {
-      console.log("Using Nominatim fallback search for:", searchType);
+      console.log(`🔍 Nominatim Search Parameters:`);
+      console.log(`   searchType: ${searchType}`);
+      console.log(`   location: ${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`);
+      console.log(`   maxDistance: ${maxDistance} miles`);
       
       // Map search types to readable queries for Nominatim
       const queryMappings = {
@@ -204,32 +442,49 @@ async function fallbackNominatimSearch(searchType, latitude, longitude) {
       const query = queryMappings[searchType] || searchType;
       const encodedQuery = encodeURIComponent(query);
       
+      console.log(`📤 Sending Nominatim request...`);
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&lat=${latitude}&lon=${longitude}&limit=10&format=json`,
+        `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&lat=${latitude}&lon=${longitude}&limit=20&format=json`,
         { headers: { 'User-Agent': 'AidLens-App' } }
       );
       
+      console.log(`📥 Nominatim response: ${response.status}`);
+      
       if (!response.ok) {
-        console.error("Nominatim API error:", response.status);
+        console.error("❌ Nominatim API error:", response.status);
         return [];
       }
       
       const results = await response.json();
       
       if (!results || results.length === 0) {
-        console.log("No results from Nominatim");
+        console.log("❌ Nominatim returned 0 results");
         return [];
       }
       
-      return results.map(place => ({
-        name: place.name,
-        latitude: parseFloat(place.lat),
-        longitude: parseFloat(place.lon),
-        source: 'OpenStreetMap (Nominatim)',
-        distance: calculateDistance(latitude, longitude, parseFloat(place.lat), parseFloat(place.lon))
-      })).sort((a, b) => a.distance - b.distance);
+      console.log(`📊 Nominatim returned ${results.length} total results`);
+      
+      const filtered = results
+        .map(place => ({
+          name: place.name,
+          latitude: parseFloat(place.lat),
+          longitude: parseFloat(place.lon),
+          source: 'OpenStreetMap (Nominatim)',
+          distance: calculateDistance(latitude, longitude, parseFloat(place.lat), parseFloat(place.lon))
+        }))
+        // Filter by max distance
+        .filter(place => {
+          const isWithinRadius = place.distance <= maxDistance;
+          console.log(`   - ${place.name}: ${place.distance.toFixed(2)} miles ${isWithinRadius ? '✅' : '❌'}`);
+          return isWithinRadius;
+        })
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10);
+      
+      console.log(`\n✅ Nominatim: Found ${filtered.length} results within ${maxDistance} miles`);
+      return filtered;
   } catch (err) {
-    console.error("Nominatim fallback also failed:", err);
+    console.error("❌ Nominatim fallback error:", err);
     return [];
   }
 }
@@ -246,17 +501,35 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Example usage - test with real OpenStreetMap data
+// Example usage - test with real OpenStreetMap data with expanding radius
 (async () => {
-  console.log("Initializing AidLens search with real OpenStreetMap data...");
-  const results = await searchNearbyByPrompt("hospital");
+  console.log("\n" + "=".repeat(70));
+  console.log("AIDLENS LOCATION SEARCH ENGINE");
+  console.log("=".repeat(70));
+  console.log("Starting search with progressive radius expansion...");
+  console.log("Radius progression: 5 -> 10 -> 15 -> 20 -> 30 -> 45 -> 60 -> 90 miles");
+  console.log("=".repeat(70) + "\n");
+  
+  const results = await searchNearbyByPrompt("restaurant");
+  
   if (results && results.length > 0) {
-    console.log(`Found ${results.length} results:`);
+    console.log("\n" + "=".repeat(70));
+    console.log("SEARCH COMPLETE: Found " + results.length + " results");
+    console.log("=".repeat(70) + "\n");
+    
     results.forEach((place, i) => {
-      console.log(`${i + 1}. ${place.name} - ${place.distance.toFixed(2)} miles away (${place.source})`);
+      console.log((i + 1) + ". " + place.name);
+      console.log("   Coordinates: " + place.latitude.toFixed(4) + "N, " + place.longitude.toFixed(4) + "W");
+      console.log("   Distance: " + place.distance.toFixed(2) + " miles");
+      console.log("   Source: " + place.source);
+      console.log();
     });
+    
+    console.log("=".repeat(70));
   } else {
-    console.log("No results found");
+    console.log("\n" + "=".repeat(70));
+    console.log("NO RESULTS found within 90 mile radius");
+    console.log("=".repeat(70));
   }
 })();
 
