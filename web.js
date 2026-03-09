@@ -1176,7 +1176,7 @@ async function sendMessage() {
     
     if (searchData) {
       // Add initial progress message bubble
-      progressMessageId = addProgressMessage('🔍 Finding help for you');
+      progressMessageId = addProgressMessage('🔍 Finding help for you ');
       
       // Add AI message that will show results as they come in
       aiMessageId = addInitialAIMessage(displayText, searchData.emoji);
@@ -1305,7 +1305,7 @@ function addProgressMessage(text) {
   const div = document.createElement('div');
   div.className = 'msg ai';
   div.id = 'progress-msg-' + Date.now();
-  div.innerHTML = `<div class="msg-avatar">🤝</div><div class="msg-bubble"><strong>AidLens Guide</strong><br/><div class="progress-content">${text}</div><div class="progress-bar-inline"><div class="progress-bar-fill" style="width:0%"></div></div></div>`;
+  div.innerHTML = `<div class="msg-avatar"><img src = "bot pfp.png" height = "30"></img></div><div class="msg-bubble"><strong>AidLens Guide</strong><br/><div class="progress-content">${text}</div><div class="progress-bar-inline"><div class="progress-bar-fill" style="width:0%"></div></div></div>`;
   msgs.appendChild(div); 
   scrollMessages();
   return div.id;
@@ -1339,7 +1339,7 @@ function addInitialAIMessage(text, emoji = '📍') {
   const div = document.createElement('div');
   div.className = 'msg ai';
   div.id = 'ai-msg-' + Date.now();
-  div.innerHTML = `<div class="msg-avatar">🤝</div><div class="msg-bubble"><strong>AidLens Guide</strong><br/>${escHtml(text).replace(/\n/g,'<br/>')}<div id="streaming-results-${div.id}" style="margin-top:12px;"></div></div>`;
+  div.innerHTML = `<div class="msg-avatar"><img src = "bot pfp.png" height = "30"></img></div><div class="msg-bubble"><strong>AidLens Guide</strong><br/>${escHtml(text).replace(/\n/g,'<br/>')}<div id="streaming-results-${div.id}" style="margin-top:12px;"></div></div>`;
   msgs.appendChild(div);
   scrollMessages();
   return div.id;
@@ -1397,7 +1397,7 @@ function addAIMessage(text, places, category, emoji) {
     cardsHtml += '</div>';
     if (places.length > 5) cardsHtml += `<div style="font-size:0.75rem;color:var(--mist);margin-top:8px;text-align:center;">+${places.length-5} more shown on map</div>`;
   }
-  div.innerHTML = `<div class="msg-avatar">🤝</div><div class="msg-bubble"><strong>AidLens Guide</strong><br/>${escHtml(text).replace(/\n/g,'<br/>')}${cardsHtml}</div>`;
+  div.innerHTML = `<div class="msg-avatar"><img src = "bot pfp.png" height = "30"></img></div><div class="msg-bubble"><strong>AidLens Guide</strong><br/>${escHtml(text).replace(/\n/g,'<br/>')}${cardsHtml}</div>`;
   msgs.appendChild(div); scrollMessages();
 }
 
@@ -1413,7 +1413,7 @@ function showTyping() {
   const msgs = document.getElementById('messages');
   typingEl = document.createElement('div');
   typingEl.className = 'typing-indicator';
-  typingEl.innerHTML = `<div class="msg-avatar">🤝</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
+  typingEl.innerHTML = `<div class="msg-avatar"><img src = "bot pfp.png" height = "30"></img></div><div class="typing-dots"><span></span><span></span><span></span></div>`;
   msgs.appendChild(typingEl); scrollMessages();
 }
 
